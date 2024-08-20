@@ -1,7 +1,27 @@
+import sys
+import tty
+import termios
+
 from statistics import quantiles
 from datetime import datetime as dt
 import numpy as np
 from filterpy.kalman import KalmanFilter
+
+
+def getch(out=None):
+    if out:
+        print(out)
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+        if ch == "\x03":
+            raise KeyboardInterrupt
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
 
 kf = KalmanFilter(dim_x=1, dim_z=1)
 kf.x = np.array([[60]])
@@ -23,12 +43,13 @@ def to_duration(delta):
 
 BPMs = []
 
-x = input("hit it")
+x = getch("hit it")
+
 start = prev = dt.now()
 out = "  0:00"
 while x != "q":
     try:
-        x = input(f"{out}")
+        x = getch(out)
     except KeyboardInterrupt:
         break
     if x == "q":
